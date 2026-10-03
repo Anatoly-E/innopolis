@@ -20,58 +20,60 @@ class Lab1App extends StatelessWidget {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(title: const Text('ЛР 1')),
-        body: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Task 1:',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              task1(),
-              const SizedBox(height: 4),
-              Divider(),
-              const SizedBox(height: 4),
-              Text(
-                'Task 2:',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              task2(),
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Task 1:',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                task1(),
+                const SizedBox(height: 4),
+                Divider(),
+                const SizedBox(height: 4),
+                Text(
+                  'Task 2:',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                task2(),
 
-              const SizedBox(height: 4),
-              Divider(),
-              const SizedBox(height: 4),
-              Text(
-                'Task 3:',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              task3(),
-              const SizedBox(height: 4),
-              Divider(),
-              const SizedBox(height: 4),
-              Text(
-                'Task 4:',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              task4(),
-              const SizedBox(height: 4),
-              Divider(),
-              const SizedBox(height: 4),
-              Text(
-                'Task 5:',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              task5(),
-              const SizedBox(height: 4),
-              Divider(),
-              const SizedBox(height: 4),
-              Text(
-                'Task 6:',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              task6(),
-            ],
+                const SizedBox(height: 4),
+                Divider(),
+                const SizedBox(height: 4),
+                Text(
+                  'Task 3:',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                task3(),
+                const SizedBox(height: 4),
+                Divider(),
+                const SizedBox(height: 4),
+                Text(
+                  'Task 4:',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                task4(),
+                const SizedBox(height: 4),
+                Divider(),
+                const SizedBox(height: 4),
+                Text(
+                  'Task 5:',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                task5(),
+                const SizedBox(height: 4),
+                Divider(),
+                const SizedBox(height: 4),
+                Text(
+                  'Task 6:',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                task6(),
+              ],
+            ),
           ),
         ),
       ),
@@ -81,9 +83,13 @@ class Lab1App extends StatelessWidget {
 
 // 1. Заголовок — Text, крупный жирный текст чёрного цвета, обрезается в одну строку, если не помещается.
 Widget task1() {
-    return const Text(
+  return const Text(
     'Amet magna minim aute culpa dolor ullamco amet ad incididunt voluptate.',
-    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
+    style: TextStyle(
+      fontSize: 24,
+      fontWeight: FontWeight.bold,
+      color: Colors.black,
+    ),
     maxLines: 1,
     overflow: TextOverflow.ellipsis,
   );
@@ -100,7 +106,11 @@ Widget task2() {
     ),
     child: const Text(
       'Veniam deserunt minim voluptate ad duis occaecat consectetur irure nisi proident enim dolor et duis. Non magna magna nulla consectetur. Aute reprehenderit labore deserunt cillum et irure nostrud sint cupidatat labore dolore ad qui ullamco. Consequat eiusmod culpa laborum sint. Id ea fugiat irure veniam aliquip minim. Ipsum adipisicing enim proident cupidatat occaecat. Aute ipsum cupidatat minim cupidatat pariatur laborum voluptate eu quis reprehenderit adipisicing id.',
-      style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic, color: Colors.white),
+      style: TextStyle(
+        fontSize: 14,
+        fontStyle: FontStyle.italic,
+        color: Colors.white,
+      ),
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
     ),
@@ -140,12 +150,12 @@ Widget task5() {
 // Для реализации используйте Container
 Widget task6() {
   return Container(
-    padding: const EdgeInsets.all(12), // White frame
+    padding: const EdgeInsets.only(left: 12, top: 12, right: 12, bottom: 60), // White frame
     decoration: BoxDecoration(
       color: Colors.white,
       border: Border.all(color: Colors.black, width: 2), // Black outline
       boxShadow: const [
-        BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(2, 2))
+        BoxShadow(color: Colors.black, blurRadius: 4, offset: Offset(0, 2)),
       ],
     ),
     child: Image.network(
