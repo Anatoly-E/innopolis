@@ -3,10 +3,16 @@
     "configurations": [
         
         {
-            "name": "HW1 (lib/main.dart)",
+            "name": "main (main.dart)",
             "request": "launch",
             "type": "dart",
             "program": "lib/main.dart"
+        },
+        {
+            "name": "HW1 (lib/hw1/main.dart)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/hw1/main.dart"
         },
         {
             "name": "HW2 (lib/hw2/main.dart)",
