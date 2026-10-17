@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "name": "HW1 (lib/main.dart)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart"
+        },
+        {
+            "name": "HW2 (lib/hw2/main.dart)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/hw2/main.dart"
+        }
+    ]
+}
