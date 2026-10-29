@@ -48,3 +48,12 @@ app.*.map.json
 .widget_preview/
 lib/practice1.dart
 lib/practice2.dart
+
+# кэш Hosting
+.firebase/
+
+# логи CLI
+firebase-debug.log
+
+# ключи сервисного аккаунта
+*-firebase-adminsdk-*.json

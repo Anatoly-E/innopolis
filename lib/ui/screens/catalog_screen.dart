@@ -1,10 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/entities/coffee.dart';
 import '../widgets/coffee_card.dart';
-
-const String baseUrl = 'https://6ad3a79e59dd78397bbbfcdf.mockapi.io';
 
 /// Главный экран каталога
 /// Является StatefulWidget, так как хранит состояние лайков и фильтра
@@ -20,19 +18,20 @@ class _CatalogScreenState extends State<CatalogScreen> {
   /// Хранилище ID лайкнутых элементов
   final Set<String> _likedIds = {};
   bool _showOnlyFavorites = false;
-  List<CoffeeItem> _items = [];
-  bool _isLoading = true;
-  String? _error;
 
   // --- Состояния формы ---
   bool _showForm = false;
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _subtitleController = TextEditingController();
 
+  /// Поток данных из Firestore (создаем один раз в initState)
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _itemsStream;
+
   @override
   void initState() {
     super.initState();
-    _fetchCoffees();
+    // Подписываемся на коллекцию 'coffees'
+    _itemsStream = FirebaseFirestore.instance.collection('coffees').snapshots();
   }
 
   @override
@@ -42,39 +41,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
     super.dispose();
   }
 
-  /// --- GET ЗАПРОС (Загрузка с сервера) ---
-  Future<void> _fetchCoffees() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final response = await http.get(Uri.parse('$baseUrl/coffees'));
-
-      if (response.statusCode != 200) {
-        throw Exception('Ошибка сервера: статус ${response.statusCode}');
-      }
-
-      // utf8.decode нужен для корректного отображения кириллицы
-      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
-      final List<CoffeeItem> loadedItems = data.map((json) => CoffeeItem.fromJson(json)).toList();
-
-      setState(() {
-        _items = loadedItems;
-      });
-    } catch (e) {
-      setState(() {
-        _error = 'Не удалось загрузить данные.\n$e';
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  /// --- POST ЗАПРОС (Добавление на сервер) ---
+  /// --- POST ЗАПРОС (Добавление в Firestore) ---
   Future<void> _addCoffee() async {
     if (_titleController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -84,34 +51,22 @@ class _CatalogScreenState extends State<CatalogScreen> {
     }
 
     try {
-      // Создаем объект с дефолтными значениями для сервера
+      // Создаем объект с дефолтными значениями
       final newCoffee = CoffeeItem(
-        id: '', // Сервер выдаст свой
+        id: '', // Firestore выдаст свой ID
         title: _titleController.text.trim(),
         subtitle: _subtitleController.text.trim().isEmpty 
             ? 'Вкусный напиток' 
             : _subtitleController.text.trim(),
         category: CoffeeCategory.espresso, 
         imagePath: '', 
-        // Этот HEX-код уходит на сервер как данные, поэтому он жестко задан
         colorHex: 0xFF8B4513, 
       );
 
-      final response = await http.post(
-        Uri.parse('$baseUrl/coffees'),
-        headers: {'Content-Type': 'application/json; charset=UTF-8'},
-        body: jsonEncode(newCoffee.toJson()),
-      );
-
-      if (response.statusCode != 201) {
-        throw Exception('Ошибка создания: статус ${response.statusCode}');
-      }
-
-      final createdCoffee = CoffeeItem.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
+      // Отправляем в Firestore
+      await FirebaseFirestore.instance.collection('coffees').add(newCoffee.toJson());
 
       setState(() {
-        // Добавляем в конец списка (чтобы совпадало с поведением сервера)
-        _items.add(createdCoffee); 
         _titleController.clear();
         _subtitleController.clear();
         _showForm = false;
@@ -119,7 +74,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Добавлено: ${createdCoffee.title}')),
+        SnackBar(content: Text('Добавлено: ${newCoffee.title}')),
       );
 
     } catch (e) {
@@ -142,7 +97,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
 
   /// --- ФОРМА ДОБАВЛЕНИЯ ---
   Widget _buildForm() {
-
     final theme = Theme.of(context);
     
     return Container(
@@ -199,13 +153,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
     final theme = Theme.of(context);
     final themeColor = theme.colorScheme.primary;
 
-    // --- Логика фильтрации ---
-    // Если фильтр включен, оставляем только те элементы, чей ID есть в _likedIds.
-    // Фильтрация происходит "на лету" в build, отдельный список не храним.
-    final filteredItems = _showOnlyFavorites
-        ? _items.where((item) => _likedIds.contains(item.id)).toList()
-        : _items;
-
     return Scaffold(
       // --- Шапка ---
       appBar: AppBar(
@@ -218,6 +165,12 @@ class _CatalogScreenState extends State<CatalogScreen> {
               setState(() => _showForm = !_showForm);
             },
           ),
+          // Кнопка Выйти
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Выйти',
+            onPressed: () => FirebaseAuth.instance.signOut(),
+          ),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(100),
@@ -227,15 +180,23 @@ class _CatalogScreenState extends State<CatalogScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // --- Статистика ---
-                Row(
-                  children: [
-                    Text('В каталоге: ${_items.length}', style: const TextStyle(fontSize: 14, color: Colors.white)),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text('•', style: TextStyle(fontSize: 14, color: Colors.white)),
-                    ),
-                    Text('В избранном: ${_likedIds.length}', style: const TextStyle(fontSize: 14, color: Colors.white)),
-                  ],
+                StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  stream: _itemsStream,
+                  builder: (context, snapshot) {
+                    // Получаем актуальное количество из Firestore
+                    final totalCount = snapshot.data?.docs.length ?? 0;
+                    
+                    return Row(
+                      children: [
+                        Text('В каталоге: $totalCount', style: const TextStyle(fontSize: 14, color: Colors.white)),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8.0),
+                          child: Text('•', style: TextStyle(fontSize: 14, color: Colors.white)),
+                        ),
+                        Text('В избранном: ${_likedIds.length}', style: const TextStyle(fontSize: 14, color: Colors.white)),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 12),
                 // --- Кнопка-переключатель фильтра ---
@@ -266,37 +227,65 @@ class _CatalogScreenState extends State<CatalogScreen> {
         children: [
           if (_showForm) _buildForm(),
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _fetchCoffees,
-                              child: const Text('Обновить'),
-                            ),
-                          ],
+            // StreamBuilder автоматически обновляет список при изменении базы
+            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: _itemsStream,
+              builder: (context, snapshot) {
+                // 1. Состояние ошибки
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Ошибка: ${snapshot.error}', textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            // Перезапуск потока
+                            setState(() {
+                              _itemsStream = FirebaseFirestore.instance.collection('coffees').snapshots();
+                            });
+                          },
+                          child: const Text('Обновить'),
                         ),
-                      )
-                    : filteredItems.isEmpty
-                        ? const Center(child: Text('Ничего не нашлось', style: TextStyle(fontSize: 18)))
-                        : ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: filteredItems.length,
-                            itemBuilder: (context, index) {
-                              final item = filteredItems[index];
-                // Передаем данные вниз (item, isLiked) и событие вверх (onLikeTap)
-                              return CoffeeCard(
-                                item: item,
-                                isLiked: _likedIds.contains(item.id),
-                                onLikeTap: () => _toggleLike(item.id),
-                              );
-                            },
-                          ),
+                      ],
+                    ),
+                  );
+                }
+
+                // 2. Состояние загрузки
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                // 3. Данные получены
+                final docs = snapshot.data?.docs ?? [];
+                final items = docs.map((doc) => CoffeeItem.fromFirestore(doc)).toList();
+
+                // Логика фильтрации (как в ДЗ 4)
+                final filteredItems = _showOnlyFavorites
+                    ? items.where((item) => _likedIds.contains(item.id)).toList()
+                    : items;
+
+                if (filteredItems.isEmpty) {
+                  return const Center(child: Text('Ничего не нашлось', style: TextStyle(fontSize: 18)));
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: filteredItems.length,
+                  itemBuilder: (context, index) {
+                    final item = filteredItems[index];
+                    // Передаем данные вниз (item, isLiked) и событие вверх (onLikeTap)
+                    return CoffeeCard(
+                      item: item,
+                      isLiked: _likedIds.contains(item.id),
+                      onLikeTap: () => _toggleLike(item.id),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),

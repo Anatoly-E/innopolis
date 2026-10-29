@@ -9,13 +9,13 @@
             "program": "lib/main.dart"
         },
         {
-            "name": "HW1 (lib/hw1/main.dart)",
+            "name": "HW1 (hw1/main.dart)",
             "request": "launch",
             "type": "dart",
             "program": "lib/hw1/main.dart"
         },
         {
-            "name": "HW2 (lib/hw2/main.dart)",
+            "name": "HW2 (hw2/main.dart)",
             "request": "launch",
             "type": "dart",
             "program": "lib/hw2/main.dart"

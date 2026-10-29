@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'firebase_options.dart';
 import 'ui/screens/catalog_screen.dart';
+import 'ui/screens/auth_screen.dart';
 
-void main() {
+void main() async {
+  // Обязательно для работы Firebase
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
 }
 
@@ -41,7 +50,36 @@ class MyApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      home: const CatalogScreen(),
+      // Заменили CatalogScreen на AuthGate
+      home: const AuthGate(),
+    );
+  }
+}
+
+/// Виджет-«страж», который слушает состояние входа (Firebase Auth)
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        // Ждем, пока Firebase проверит сохраненный вход
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        
+        // Если пользователь вошел — показываем каталог
+        if (snapshot.hasData) {
+          return const CatalogScreen();
+        }
+        
+        // Если не вошел — показываем экран входа
+        return const AuthScreen();
+      },
     );
   }
 }

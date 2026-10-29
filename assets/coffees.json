@@ -1,0 +1,91 @@
+[
+  {
+    "id": "1",
+    "title": "Американо",
+    "subtitle": "Эспрессо, разбавленный горячей водой",
+    "category": "espresso",
+    "image": "assets/hw2/images/americano.png",
+    "color": "4B3621"
+  },
+  {
+    "id": "2",
+    "title": "Бреве",
+    "subtitle": "Кофе на сливках вместо молока",
+    "category": "milk",
+    "image": "assets/hw2/images/breve.png",
+    "color": "E0B084"
+  },
+  {
+    "id": "3",
+    "title": "Капучино",
+    "subtitle": "Эспрессо с молочной пенкой",
+    "category": "milk",
+    "image": "assets/hw2/images/cappuccino.png",
+    "color": "A0764B"
+  },
+  {
+    "id": "4",
+    "title": "Эспрессо кон панна",
+    "subtitle": "Эспрессо со взбитыми сливками",
+    "category": "espresso",
+    "image": "assets/hw2/images/espresso_con_panna.png",
+    "color": "6F4E37"
+  },
+  {
+    "id": "5",
+    "title": "Флэт уайт",
+    "subtitle": "Двойной эспрессо с тонким слоем молока",
+    "category": "milk",
+    "image": "assets/hw2/images/flat_white.png",
+    "color": "C4A484"
+  },
+  {
+    "id": "6",
+    "title": "Латте",
+    "subtitle": "Мягкий кофе с большим количеством молока",
+    "category": "milk",
+    "image": "assets/hw2/images/latte.png",
+    "color": "D7B899"
+  },
+  {
+    "id": "7",
+    "title": "Латте макиато",
+    "subtitle": "Молоко с каплей эспрессо",
+    "category": "milk",
+    "image": "assets/hw2/images/latte_macciato.png",
+    "color": "B58B6B"
+  },
+  {
+    "id": "8",
+    "title": "Макиато",
+    "subtitle": "Эспрессо с каплей молока",
+    "category": "espresso",
+    "image": "assets/hw2/images/macciato.png",
+    "color": "5D4037"
+  },
+  {
+    "id": "9",
+    "title": "Мокко",
+    "subtitle": "Кофе с шоколадом и молоком",
+    "category": "specialty",
+    "image": "assets/hw2/images/mocha.png",
+    "color": "3E2723"
+  },
+  {
+    "id": "10",
+    "title": "Ристретто",
+    "subtitle": "Концентрированный короткий эспрессо",
+    "category": "espresso",
+    "image": "assets/hw2/images/ristretto.png",
+    "color": "2E1A0F"
+  },
+  {
+    "title": "Бамбл",
+    "subtitle": "Эспрессо с апельсиновым соком со льдом",
+    "category": "espresso",
+    "image": "bumble",
+    "color": "8B4513",
+    "id": "11",
+    "description": ""
+  }
+]

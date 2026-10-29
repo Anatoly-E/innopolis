@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 /// Файл модели данных (Entity)
 /// Описывает структуру одного элемента каталога (напитка)
 
@@ -7,7 +9,7 @@ enum CoffeeCategory { espresso, milk, specialty }
 /// Модель напитка в каталоге
 class CoffeeItem {
 
-  /// Уникальный идентификатор (строковый, так как MockAPI использует Object ID)
+  /// Уникальный идентификатор (в Firestore это ID документа)
   final String id;
 
   /// Название напитка
@@ -15,6 +17,7 @@ class CoffeeItem {
 
   /// Краткое описание
   final String subtitle;
+  
   /// Категория напитка
   final CoffeeCategory category;
 
@@ -38,25 +41,21 @@ class CoffeeItem {
     required this.colorHex,
   });
 
-  /// Превращает JSON с сервера в объект Flutter
-  factory CoffeeItem.fromJson(Map<String, dynamic> json) {
-    // Защита: если сервер не прислал id, используем title
-    final String safeId = (json['id'] != null && json['id'].toString().isNotEmpty) 
-        ? json['id'].toString() 
-        : (json['title'] ?? 'unknown').toString();
-
+  /// Превращает документ Firestore в объект Flutter
+  factory CoffeeItem.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data()!;
     return CoffeeItem(
-      id: safeId,
-      title: json['title'] as String,
-      subtitle: json['subtitle'] as String,
-      category: CoffeeCategory.values.byName(json['category'] as String),
-      description: json['description'] as String?,
-      imagePath: json['image'] as String,
-      colorHex: int.parse('FF${json['color']}', radix: 16),
+      id: doc.id,
+      title: data['title'] ?? 'Без названия',
+      subtitle: data['subtitle'] ?? '',
+      category: CoffeeCategory.values.byName(data['category'] ?? 'espresso'),
+      description: data['description'],
+      imagePath: data['image'] ?? '',
+      colorHex: int.tryParse('FF${data['color']}', radix: 16) ?? 0xFF8B4513,
     );
   }
 
-  /// Превращает объект в Map для отправки на сервер (POST)
+  /// Превращает объект в Map для отправки в Firestore (POST)
   Map<String, dynamic> toJson() {
     return {
       'title': title,
