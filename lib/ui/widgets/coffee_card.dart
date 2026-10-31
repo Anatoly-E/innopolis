@@ -1,31 +1,24 @@
 import 'package:flutter/material.dart';
-
 import '../../domain/entities/coffee.dart';
 
 /// Виджет карточки одного напитка
-/// Является StatelessWidget, так как состояние лайка хранится на экране
 class CoffeeCard extends StatelessWidget {
-  /// Модель данных напитка
   final CoffeeItem item;
-
-  /// Флаг: находится ли этот напиток в избранном
   final bool isLiked;
-
-  /// Колбэк функция, которая вызывается при нажатии на сердечко
   final VoidCallback onLikeTap;
+  final VoidCallback onTap;
 
   const CoffeeCard({
     super.key,
     required this.item,
     required this.isLiked,
     required this.onLikeTap,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Берем основые цвета из темы приложения
     final theme = Theme.of(context);
-    final themeColor = theme.colorScheme.primary;
     final cardColor = theme.colorScheme.surface;
 
     return Container(
@@ -42,41 +35,35 @@ class CoffeeCard extends StatelessWidget {
           ),
         ],
       ),
-      // --- Карточка ---
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => debugPrint('Нажата карточка ${item.title}'),
+          onTap: onTap,
           child: Row(
             children: [
-              // --- Картинка и сердечко карточки ---
               SizedBox(
                 width: 130,
                 height: 110,
                 child: Stack(
                   children: [
-                    // Картинка
                     Positioned.fill(
                       child: ClipRRect(
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(16),
                           bottomLeft: Radius.circular(16),
                         ),
-                        // Проверка на пустой путь к картинке (для новых элементов)
                         child: item.imagePath.isEmpty
                             ? Container(color: Color(item.colorHex))
                             : Image.asset(
                                 item.imagePath,
                                 fit: BoxFit.cover,
                                 alignment: Alignment.centerLeft,
-                                // Резервный вариант, если картинка не найдена
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(color: Color(item.colorHex));
                                 },
                               ),
                       ),
                     ),
-                    // Сердечко
                     Positioned(
                       top: 0,
                       right: 0,
@@ -91,7 +78,6 @@ class CoffeeCard extends StatelessWidget {
                           minWidth: 32,
                           minHeight: 32,
                         ),
-                        // Вызываем колбэк, переданный от экрана
                         onPressed: onLikeTap,
                       ),
                     ),
@@ -99,7 +85,6 @@ class CoffeeCard extends StatelessWidget {
                 ),
               ),
 
-              // --- Текстовый блок ---
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -115,7 +100,7 @@ class CoffeeCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: themeColor,
+                          color: theme.colorScheme.onSurface,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -125,22 +110,37 @@ class CoffeeCard extends StatelessWidget {
                         item.subtitle,
                         style: TextStyle(
                           fontSize: 13,
-                          color: themeColor.withValues(alpha: 0.7),
+                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      // НОВОЕ: Глобальный счетчик лайков
+                      Row(
+                        children: [
+                          Icon(Icons.favorite, size: 14, color: Colors.grey.shade500),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${item.likesCount}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
               ),
 
-              // Декоративная стрелочка
               Padding(
                 padding: const EdgeInsets.only(right: 12),
                 child: Icon(
                   Icons.chevron_right,
-                  color: themeColor.withValues(alpha: 0.3),
+                  color: theme.colorScheme.outline.withValues(alpha: 0.5),
                 ),
               ),
             ],

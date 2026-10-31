@@ -1,12 +1,15 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:widjets_1/bloc/theme_cubit.dart';
+
 import '../../domain/entities/coffee.dart';
 import '../widgets/coffee_card.dart';
-import '../../bloc/coffee_bloc.dart'; 
-import '../../bloc/coffee_event.dart'; 
-import '../../bloc/coffee_state.dart'; 
+import '../../bloc/coffee_bloc.dart';
+import '../../bloc/coffee_event.dart';
+import '../../bloc/coffee_state.dart';
+import 'coffee_detail_screen.dart';
+
 
 /// Главный экран каталога
 /// Является StatefulWidget, так как хранит состояние лайков и фильтра
@@ -18,12 +21,7 @@ class CatalogScreen extends StatefulWidget {
 }
 
 class _CatalogScreenState extends State<CatalogScreen> {
-  // --- Состояния экрана ---
-  /// Хранилище ID лайкнутых элементов
-  final Set<String> _likedIds = {};
-  bool _showOnlyFavorites = false;
-
-  // --- Состояния формы ---
+  // --- Состояния формы (локальные для UI) ---
   bool _showForm = false;
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _subtitleController = TextEditingController();
@@ -35,76 +33,13 @@ class _CatalogScreenState extends State<CatalogScreen> {
     super.dispose();
   }
 
-  /// --- POST ЗАПРОС (Добавление в Firestore) ---
-  Future<void> _addCoffee() async {
-    if (_titleController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Введите название напитка!')),
-      );
-      return;
-    }
-
-    try {
-      // Создаем объект с дефолтными значениями
-      final newCoffee = CoffeeItem(
-        id: '', // Firestore выдаст свой ID
-        title: _titleController.text.trim(),
-        subtitle: _subtitleController.text.trim().isEmpty 
-            ? 'Вкусный напиток' 
-            : _subtitleController.text.trim(),
-        category: CoffeeCategory.espresso, 
-        imagePath: '', 
-        colorHex: 0xFF8B4513, 
-      );
-
-      // Отправляем в Firestore напрямую (BLoC сам подхватит изменения)
-      await FirebaseAuth.instance; // Заглушка, чтобы не ругался импорт (или можно удалить)
-      await BlocProvider.of<CoffeeBloc>(context).state; // Просто обращаемся к BLoC
-            
-      // Отправляем в Firestore
-      await FirebaseFirestore.instance.collection('coffees').add(newCoffee.toJson());
-
-      // Вместо прямого вызова, мы попросим BLoC сделать это (но в ДЗ 6 этого нет).
-      // Поэтому оставляем прямой вызов. Для этого нужен импорт.
-      
-      // P.S. Я вернул импорт cloud_firestore наверх для этого метода.
-
-      setState(() {
-        _titleController.clear();
-        _subtitleController.clear();
-        _showForm = false;
-      });
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Добавлено: ${newCoffee.title}')),
-      );
-
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка: $e')),
-      );
-    }
-  }
-
-  void _toggleLike(String id) {
-    setState(() {
-      if (_likedIds.contains(id)) {
-        _likedIds.remove(id);
-      } else {
-        _likedIds.add(id);
-      }
-    });
-  }
-
   /// --- ФОРМА ДОБАВЛЕНИЯ ---
   Widget _buildForm() {
     final theme = Theme.of(context);
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
-      color: theme.colorScheme.surface, 
+      color: theme.colorScheme.surface,
       child: Column(
         children: [
           Row(
@@ -138,8 +73,35 @@ class _CatalogScreenState extends State<CatalogScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
+              // Отправляем событие в BLoC
               onPressed: () {
-                _addCoffee();
+                if (_titleController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Введите название напитка!')),
+                  );
+                  return;
+                }
+
+                // Создаем объект с дефолтными значениями
+                final newCoffee = CoffeeItem(
+                  id: '', // Firestore выдаст свой ID
+                  title: _titleController.text.trim(),
+                  subtitle: _subtitleController.text.trim().isEmpty
+                      ? 'Вкусный напиток'
+                      : _subtitleController.text.trim(),
+                  category: CoffeeCategory.espresso,
+                  imagePath: '',
+                  colorHex: 0xFF8B4513,
+                );
+
+                // Отправляем событие в BLoC
+                context.read<CoffeeBloc>().add(CoffeeAdded(newCoffee));
+
+                setState(() {
+                  _titleController.clear();
+                  _subtitleController.clear();
+                  _showForm = false;
+                });
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.colorScheme.primary,
@@ -158,14 +120,36 @@ class _CatalogScreenState extends State<CatalogScreen> {
     final theme = Theme.of(context);
     final themeColor = theme.colorScheme.primary;
 
-    // --- Логика фильтрации ---
-    // (Перенесена внутрь BlocBuilder, так как зависит от данных из состояния)
-
     return Scaffold(
       // --- Шапка ---
       appBar: AppBar(
-        title: const Text('Каталог кофе', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Каталог кофе',
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+        ),
         actions: [
+          // --- Кнопка переключения темы ---
+          PopupMenuButton<ThemeMode>(
+            icon: const Icon(Icons.brightness_6),
+            tooltip: 'Тема',
+            onSelected: (mode) {
+              context.read<ThemeCubit>().setTheme(mode);
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: ThemeMode.light,
+                child: Text('Светлая'),
+              ),
+              const PopupMenuItem(
+                value: ThemeMode.dark,
+                child: Text('Тёмная'),
+              ),
+              const PopupMenuItem(
+                value: ThemeMode.system,
+                child: Text('Системная'),
+              ),
+            ],
+          ),
           IconButton(
             icon: Icon(_showForm ? Icons.close : Icons.add),
             tooltip: 'Добавить напиток',
@@ -184,54 +168,90 @@ class _CatalogScreenState extends State<CatalogScreen> {
           preferredSize: const Size.fromHeight(100),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // --- Статистика (используем BlocBuilder для получения количества) ---
-                BlocBuilder<CoffeeBloc, CoffeeState>(
-                  builder: (context, state) {
-                    int totalCount = 0;
-                    if (state is CoffeeLoadSuccess) {
-                      totalCount = state.items.length;
-                    }
-                    
-                    return Row(
+            // --- Статистика и фильтр (через BlocBuilder) ---
+            child: BlocBuilder<CoffeeBloc, CoffeeState>(
+              builder: (context, state) {
+                final totalCount = state is CoffeeLoadSuccess
+                    ? state.items.length
+                    : 0;
+                final likedCount = state is CoffeeLoadSuccess
+                    ? state.likedIds.length
+                    : 0;
+                final isFilterOn = state is CoffeeLoadSuccess
+                    ? state.onlyFavorites
+                    : false;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // --- Статистика ---
+                    Row(
                       children: [
-                        Text('В каталоге: $totalCount', style: const TextStyle(fontSize: 14, color: Colors.white)),
+                        Text(
+                          'В каталоге: $totalCount',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                          ),
+                        ),
                         const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Text('•', style: TextStyle(fontSize: 14, color: Colors.white)),
+                          child: Text(
+                            '•',
+                            style: TextStyle(fontSize: 14, color: Colors.white),
+                          ),
                         ),
-                        Text('В избранном: ${_likedIds.length}', style: const TextStyle(fontSize: 14, color: Colors.white)),
+                        Text(
+                          'В избранном: $likedCount',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                          ),
+                        ),
                       ],
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-                // --- Кнопка-переключатель фильтра ---
-                SizedBox(
-                  width: double.infinity,
-                  height: 38,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _showOnlyFavorites ? Colors.grey.shade300 : theme.colorScheme.surface,
-                      foregroundColor: themeColor,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(19)),
                     ),
-                    onPressed: () {
-                      setState(() => _showOnlyFavorites = !_showOnlyFavorites);
-                    },
-                    icon: Icon(_showOnlyFavorites ? Icons.favorite : Icons.favorite_border, color: _showOnlyFavorites ? Colors.red : themeColor, size: 18),
-                    label: const Text('Только избранные', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                  ),
-                ),
-              ],
+                    const SizedBox(height: 12),
+                    // --- Кнопка-переключатель фильтра ---
+                    SizedBox(
+                      width: double.infinity,
+                      height: 38,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isFilterOn
+                              ? Colors.grey.shade300
+                              : theme.colorScheme.surface,
+                          foregroundColor: themeColor,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(19),
+                          ),
+                        ),
+                        onPressed: () {
+                          // Отправляем событие переключения фильтра
+                          context.read<CoffeeBloc>().add(CoffeeFilterToggled());
+                        },
+                        icon: Icon(
+                          isFilterOn ? Icons.favorite : Icons.favorite_border,
+                          color: isFilterOn ? Colors.red : themeColor,
+                          size: 18,
+                        ),
+                        label: const Text(
+                          'Только избранные',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),
       ),
-      // --- Список карточек (используем BlocBuilder) ---
+      // --- Список карточек ---
       body: Column(
         children: [
           if (_showForm) _buildForm(),
@@ -249,12 +269,17 @@ class _CatalogScreenState extends State<CatalogScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(state.message, textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
+                        Text(
+                          state.message,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.red),
+                        ),
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: () {
-                            // Отправляем событие заново в BLoC
-                            context.read<CoffeeBloc>().add(CoffeeLoadRequested());
+                            context.read<CoffeeBloc>().add(
+                              CoffeeLoadRequested(),
+                            );
                           },
                           child: const Text('Обновить'),
                         ),
@@ -265,27 +290,44 @@ class _CatalogScreenState extends State<CatalogScreen> {
 
                 // 3. Состояние с данными
                 final s = state as CoffeeLoadSuccess;
-                final items = s.items;
+                final items = s.visibleItems; // Берем отфильтрованный список
 
-                // Логика фильтрации
-                final filteredItems = _showOnlyFavorites
-                    ? items.where((item) => _likedIds.contains(item.id)).toList()
-                    : items;
-
-                if (filteredItems.isEmpty) {
-                  return const Center(child: Text('Ничего не нашлось', style: TextStyle(fontSize: 18)));
+                if (items.isEmpty) {
+                  return Center(
+                    child: Text(
+                      s.onlyFavorites
+                          ? 'В избранном пока пусто'
+                          : 'Каталог пуст',
+                      style: const TextStyle(fontSize: 18),
+                    ),
+                  );
                 }
 
                 return ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: filteredItems.length,
+                  itemCount: items.length,
                   itemBuilder: (context, index) {
-                    final item = filteredItems[index];
-                    // Передаем данные вниз (item, isLiked) и событие вверх (onLikeTap)
+                    final item = items[index];
+
+                    // Убрали GestureDetector, так как навигация теперь передается в onTap карточки
                     return CoffeeCard(
                       item: item,
-                      isLiked: _likedIds.contains(item.id),
-                      onLikeTap: () => _toggleLike(item.id),
+                      isLiked: s.likedIds.contains(item.id),
+                      // Передаем событие вверх в BLoC
+                      onLikeTap: () => context.read<CoffeeBloc>().add(
+                        CoffeeLikeToggled(item.id),
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BlocProvider.value(
+                              value: context.read<CoffeeBloc>(), // Передаем BLoC
+                              child: CoffeeDetailScreen(coffeeId: item.id),
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 );
