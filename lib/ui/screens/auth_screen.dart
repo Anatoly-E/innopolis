@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthScreen extends StatefulWidget {
+
+  /// Экран авторизации/регистрации
   const AuthScreen({super.key});
 
   @override
@@ -13,6 +15,9 @@ class _AuthScreenState extends State<AuthScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
+  
+  // Флаг режима (true - вход, false - регистрация)
+  bool _isLogin = true; 
 
   @override
   void dispose() {
@@ -21,14 +26,14 @@ class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
-  Future<void> _submit(bool isLogin) async {
+  Future<void> _submit() async {
     setState(() {
       _errorMessage = null;
       _isLoading = true;
     });
 
     try {
-      if (isLogin) {
+      if (_isLogin) {
         await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
@@ -39,22 +44,35 @@ class _AuthScreenState extends State<AuthScreen> {
           password: _passwordController.text.trim(),
         );
       }
-      // AuthGate в main.dart сам перекинет нас на каталог при успехе
     } on FirebaseAuthException catch (e) {
       setState(() {
-        // Показываем код ошибки, как требует задание
-        _errorMessage = 'Ошибка: ${e.code}'; 
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Неизвестная ошибка: $e';
+        // Расшифровываем понятные ошибки (как требуют в аттестации)
+        switch (e.code) {
+          case 'user-not-found':
+          case 'invalid-credential':
+            _errorMessage = 'Неверный email или пароль';
+            break;
+          case 'email-already-in-use':
+            _errorMessage = 'Такой аккаунт уже существует';
+            break;
+          case 'weak-password':
+            _errorMessage = 'Пароль должен быть не менее 6 символов';
+            break;
+          case 'invalid-email':
+            _errorMessage = 'Некорректный email';
+            break;
+          case 'missing-password':
+            _errorMessage = 'Некорректный пароль';
+            break;
+          case 'network-request-failed':
+            _errorMessage = 'Проверьте интернет соединение';
+            break;
+          default:
+            _errorMessage = 'Ошибка: ${e.code}';
+        }
       });
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -63,7 +81,7 @@ class _AuthScreenState extends State<AuthScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Вход в Каталог')),
+      appBar: AppBar(title: Text(_isLogin ? 'Вход в Каталог' : 'Регистрация')),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -72,19 +90,13 @@ class _AuthScreenState extends State<AuthScreen> {
             children: [
               TextField(
                 controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'Пароль',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: 'Пароль', border: OutlineInputBorder()),
                 obscureText: true,
               ),
               const SizedBox(height: 24),
@@ -95,6 +107,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   child: Text(
                     _errorMessage!,
                     style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
                   ),
                 ),
 
@@ -107,21 +120,24 @@ class _AuthScreenState extends State<AuthScreen> {
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
-                        onPressed: () => _submit(true),
+                        onPressed: _submit,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: theme.colorScheme.primary,
                           foregroundColor: theme.colorScheme.onPrimary,
                         ),
-                        child: const Text('Войти'),
+                        child: Text(_isLogin ? 'Войти' : 'Зарегистрироваться'),
                       ),
                     ),
                     const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: OutlinedButton(
-                        onPressed: () => _submit(false),
-                        child: const Text('Зарегистрироваться'),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _isLogin = !_isLogin; // Переключаем режим
+                          _errorMessage = null; // Сбрасываем ошибку
+                        });
+                      },
+                      child: Text(
+                        _isLogin ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти',
                       ),
                     ),
                   ],

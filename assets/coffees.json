@@ -1,91 +1,92 @@
 [
   {
-    "id": "1",
     "title": "Американо",
     "subtitle": "Эспрессо, разбавленный горячей водой",
     "category": "espresso",
-    "image": "assets/hw2/images/americano.png",
-    "color": "4B3621"
+    "image": "assets/images/americano.png",
+    "color": "4B3621",
+    "likesCount": 0,
+    "description": "Классический итальянский кофе. Насыщенный вкус эспрессо с добавлением горячей воды, что делает напиток более мягким и объемным."
   },
   {
-    "id": "2",
     "title": "Бреве",
     "subtitle": "Кофе на сливках вместо молока",
     "category": "milk",
-    "image": "assets/hw2/images/breve.png",
-    "color": "E0B084"
+    "image": "assets/images/breve.png",
+    "color": "E0B084",
+    "likesCount": 0,
+    "description": "Кофейный напиток, в котором вместо обычного молока используются сливки. Получается невероятно нежным, бархатистым и калорийным."
   },
   {
-    "id": "3",
     "title": "Капучино",
     "subtitle": "Эспрессо с молочной пенкой",
     "category": "milk",
-    "image": "assets/hw2/images/cappuccino.png",
-    "color": "A0764B"
+    "image": "assets/images/cappuccino.png",
+    "color": "A0764B",
+    "likesCount": 0,
+    "description": "Итальянский кофе на основе эспрессо с добавлением молока и густой молочной пены. Идеальный баланс кофе и молока."
   },
   {
-    "id": "4",
     "title": "Эспрессо кон панна",
     "subtitle": "Эспрессо со взбитыми сливками",
     "category": "espresso",
-    "image": "assets/hw2/images/espresso_con_panna.png",
-    "color": "6F4E37"
+    "image": "assets/images/espresso_con_panna.png",
+    "color": "6F4E37",
+    "likesCount": 0,
+    "description": "Порция крепкого эспрессо, украшенная шапкой из взбитых сливок. Сливки делают вкус более мягким и сладким."
   },
   {
-    "id": "5",
     "title": "Флэт уайт",
     "subtitle": "Двойной эспрессо с тонким слоем молока",
     "category": "milk",
-    "image": "assets/hw2/images/flat_white.png",
-    "color": "C4A484"
+    "image": "assets/images/flat_white.png",
+    "color": "C4A484",
+    "likesCount": 0,
+    "description": "Двойная порция эспрессо с тонким слоем молочной пены (микропенки). Более крепкий и насыщенный, чем обычный латте."
   },
   {
-    "id": "6",
     "title": "Латте",
     "subtitle": "Мягкий кофе с большим количеством молока",
     "category": "milk",
-    "image": "assets/hw2/images/latte.png",
-    "color": "D7B899"
+    "image": "assets/images/latte.png",
+    "color": "D7B899",
+    "likesCount": 0,
+    "description": "Мягкий кофейный напиток с большим содержанием горячего молока и небольшим количеством эспрессо. Отлично подходит для начала дня."
   },
   {
-    "id": "7",
     "title": "Латте макиато",
     "subtitle": "Молоко с каплей эспрессо",
     "category": "milk",
-    "image": "assets/hw2/images/latte_macciato.png",
-    "color": "B58B6B"
+    "image": "assets/images/latte_macciato.png",
+    "color": "B58B6B",
+    "likesCount": 0,
+    "description": "Слоистый напиток: горячее молоко, молочная пена и эспрессо, который аккуратно вливают сверху, создавая красивое пятно (макиато)."
   },
   {
-    "id": "8",
     "title": "Макиато",
     "subtitle": "Эспрессо с каплей молока",
     "category": "espresso",
-    "image": "assets/hw2/images/macciato.png",
-    "color": "5D4037"
+    "image": "assets/images/macciato.png",
+    "color": "5D4037",
+    "likesCount": 0,
+    "description": "Крепкий эспрессо с небольшим количеством молочной пены. Название переводится как «пятнистый» из-за капли молока на кофе."
   },
   {
-    "id": "9",
     "title": "Мокко",
     "subtitle": "Кофе с шоколадом и молоком",
     "category": "specialty",
-    "image": "assets/hw2/images/mocha.png",
-    "color": "3E2723"
+    "image": "assets/images/mocha.png",
+    "color": "3E2723",
+    "likesCount": 0,
+    "description": "Смесь эспрессо, горячего шоколада и молока. Любимый десертный напиток для тех, кто предпочитает сладкий кофе."
   },
   {
-    "id": "10",
     "title": "Ристретто",
     "subtitle": "Концентрированный короткий эспрессо",
     "category": "espresso",
-    "image": "assets/hw2/images/ristretto.png",
-    "color": "2E1A0F"
-  },
-  {
-    "title": "Бамбл",
-    "subtitle": "Эспрессо с апельсиновым соком со льдом",
-    "category": "espresso",
-    "image": "bumble",
-    "color": "8B4513",
-    "id": "11",
-    "description": ""
+    "image": "assets/images/ristretto.png",
+    "color": "2E1A0F",
+    "likesCount": 0,
+    "description": "Очень концентрированный и короткий эспрессо (меньше воды, тот же объем кофе). Обладает ярким, насыщенным вкусом и сладостью."
   }
 ]
