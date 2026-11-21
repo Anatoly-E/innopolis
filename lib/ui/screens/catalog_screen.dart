@@ -1,8 +1,12 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/coffee.dart';
 import '../widgets/coffee_card.dart';
+import '../../bloc/coffee_bloc.dart'; 
+import '../../bloc/coffee_event.dart'; 
+import '../../bloc/coffee_state.dart'; 
 
 /// Главный экран каталога
 /// Является StatefulWidget, так как хранит состояние лайков и фильтра
@@ -23,16 +27,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
   bool _showForm = false;
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _subtitleController = TextEditingController();
-
-  /// Поток данных из Firestore (создаем один раз в initState)
-  late final Stream<QuerySnapshot<Map<String, dynamic>>> _itemsStream;
-
-  @override
-  void initState() {
-    super.initState();
-    // Подписываемся на коллекцию 'coffees'
-    _itemsStream = FirebaseFirestore.instance.collection('coffees').snapshots();
-  }
 
   @override
   void dispose() {
@@ -63,8 +57,17 @@ class _CatalogScreenState extends State<CatalogScreen> {
         colorHex: 0xFF8B4513, 
       );
 
+      // Отправляем в Firestore напрямую (BLoC сам подхватит изменения)
+      await FirebaseAuth.instance; // Заглушка, чтобы не ругался импорт (или можно удалить)
+      await BlocProvider.of<CoffeeBloc>(context).state; // Просто обращаемся к BLoC
+            
       // Отправляем в Firestore
       await FirebaseFirestore.instance.collection('coffees').add(newCoffee.toJson());
+
+      // Вместо прямого вызова, мы попросим BLoC сделать это (но в ДЗ 6 этого нет).
+      // Поэтому оставляем прямой вызов. Для этого нужен импорт.
+      
+      // P.S. Я вернул импорт cloud_firestore наверх для этого метода.
 
       setState(() {
         _titleController.clear();
@@ -135,7 +138,9 @@ class _CatalogScreenState extends State<CatalogScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _addCoffee,
+              onPressed: () {
+                _addCoffee();
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.colorScheme.primary,
                 foregroundColor: theme.colorScheme.onPrimary,
@@ -152,6 +157,9 @@ class _CatalogScreenState extends State<CatalogScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final themeColor = theme.colorScheme.primary;
+
+    // --- Логика фильтрации ---
+    // (Перенесена внутрь BlocBuilder, так как зависит от данных из состояния)
 
     return Scaffold(
       // --- Шапка ---
@@ -179,12 +187,13 @@ class _CatalogScreenState extends State<CatalogScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // --- Статистика ---
-                StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                  stream: _itemsStream,
-                  builder: (context, snapshot) {
-                    // Получаем актуальное количество из Firestore
-                    final totalCount = snapshot.data?.docs.length ?? 0;
+                // --- Статистика (используем BlocBuilder для получения количества) ---
+                BlocBuilder<CoffeeBloc, CoffeeState>(
+                  builder: (context, state) {
+                    int totalCount = 0;
+                    if (state is CoffeeLoadSuccess) {
+                      totalCount = state.items.length;
+                    }
                     
                     return Row(
                       children: [
@@ -222,29 +231,30 @@ class _CatalogScreenState extends State<CatalogScreen> {
           ),
         ),
       ),
-      // --- Список карточек ---
+      // --- Список карточек (используем BlocBuilder) ---
       body: Column(
         children: [
           if (_showForm) _buildForm(),
           Expanded(
-            // StreamBuilder автоматически обновляет список при изменении базы
-            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: _itemsStream,
-              builder: (context, snapshot) {
-                // 1. Состояние ошибки
-                if (snapshot.hasError) {
+            child: BlocBuilder<CoffeeBloc, CoffeeState>(
+              builder: (context, state) {
+                // 1. Состояние загрузки
+                if (state is CoffeeLoadInProgress) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                // 2. Состояние ошибки
+                if (state is CoffeeLoadFailure) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Ошибка: ${snapshot.error}', textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
+                        Text(state.message, textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: () {
-                            // Перезапуск потока
-                            setState(() {
-                              _itemsStream = FirebaseFirestore.instance.collection('coffees').snapshots();
-                            });
+                            // Отправляем событие заново в BLoC
+                            context.read<CoffeeBloc>().add(CoffeeLoadRequested());
                           },
                           child: const Text('Обновить'),
                         ),
@@ -253,16 +263,11 @@ class _CatalogScreenState extends State<CatalogScreen> {
                   );
                 }
 
-                // 2. Состояние загрузки
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+                // 3. Состояние с данными
+                final s = state as CoffeeLoadSuccess;
+                final items = s.items;
 
-                // 3. Данные получены
-                final docs = snapshot.data?.docs ?? [];
-                final items = docs.map((doc) => CoffeeItem.fromFirestore(doc)).toList();
-
-                // Логика фильтрации (как в ДЗ 4)
+                // Логика фильтрации
                 final filteredItems = _showOnlyFavorites
                     ? items.where((item) => _likedIds.contains(item.id)).toList()
                     : items;

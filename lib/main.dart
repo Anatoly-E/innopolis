@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'firebase_options.dart';
 import 'ui/screens/catalog_screen.dart';
 import 'ui/screens/auth_screen.dart';
+import 'bloc/coffee_bloc.dart';
+import 'bloc/coffee_event.dart';
 
 void main() async {
   // Обязательно для работы Firebase
@@ -50,7 +53,6 @@ class MyApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      // Заменили CatalogScreen на AuthGate
       home: const AuthGate(),
     );
   }
@@ -74,7 +76,11 @@ class AuthGate extends StatelessWidget {
         
         // Если пользователь вошел — показываем каталог
         if (snapshot.hasData) {
-          return const CatalogScreen();
+          // Оборачиваем экран в BlocProvider, чтобы экран видел BLoC
+          return BlocProvider(
+            create: (_) => CoffeeBloc()..add(CoffeeLoadRequested()), // Создали и сразу загрузили
+            child: const CatalogScreen(),
+          );
         }
         
         // Если не вошел — показываем экран входа
